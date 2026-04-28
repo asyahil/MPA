@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <meta name="theme-color" content="#4361ee">
+    <meta name="description" content="Sistem Kehadiran dan Penilaian Siswa - PWA Modern">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    <title>Sistem Kehadiran & Penilaian Siswa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        /* ========================================
+           MODERN RESET & VARIABLES
+        ======================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #1e293b;
+            --primary-dark: #8b5cf6;
+            --primary-light: #a855f7;
+            --secondary: #232438;
+            --success: #06d6a0;
+            --warning: #f72585;
+            --danger: #e63946;
+            --info: #4895ef;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --border: #001c4124;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #cfecfc 0%, #21263a 100%);
+            color: var(--dark);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ========================================
+           TYPOGRAPHY
+        ======================================== */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* ========================================
+           CONTAINER & LAYOUT
+        ======================================== */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 24px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 12px 16px;
+            }
+        }
+
+        /* ========================================
+           HEADER MODERN
+        ======================================== */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            margin-bottom: 28px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.05);
+            transform: rotate(35deg);
+            pointer-events: none;
+        }
+
+        .app-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-header h1 i {
+            font-size: 1.75rem;
+        }
+
+        .app-header p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 20px 24px;
+            }
+            .app-header h1 {
+                font-size: 1.35rem;
+            }
+        }
+
+        /* ========================================
+           CARDS MODERN
+        ======================================== */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--white);
+        }
+
+        .card-header h2, .card-header h3 {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 20px 24px;
+        }
+
+        /* Class Selector Card */
+        .class-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            margin-bottom: 28px;
+        }
+
+        .class-card .card-header {
+            background: transparent;
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .class-card .card-body {
+            padding-top: 0;
+        }
+
+        .class-select {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 1rem;
+            border: none;
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .class-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        .class-info {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .class-info-item {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius);
+            padding: 12px 20px;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .class-info-item .label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .class-info-item .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Modal Large */
+        .modal-large {
+            max-width: 95%;
+            width: 1200px;
+        }
+
+        /* Class Info Preview */
+        .class-info-preview {
+            background: var(--light);
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+
+        .class-info-preview strong {
+            color: var(--primary);
+        }
+
+        /* Responsive Modal */
+        @media (max-width: 768px) {
+            .modal-large {
+                max-width: 98%;
+                width: 98%;
+            }
+            
+            .modal-body {
+                padding: 16px;
+            }
+        }
+
+        /* ========================================
+           BUTTONS MODERN
+        ======================================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: rgb(254, 251, 251);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: rgb(245, 241, 241);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+
+        .btn-icon {
+            padding: 8px 12px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Action Buttons Group */
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ========================================
+           TABS MODERN
+        ======================================== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--white);
+            padding: 4px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab i {
+            font-size: 1rem;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========================================
+           FORM ELEMENTS
+        ======================================== */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        /* ========================================
+           TABLES MODERN
+        ======================================== */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--white);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            background: var(--light);
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table tr:hover {
+            background: var(--light);
+        }
+
+        .data-table td:last-child,
+        .data-table th:last-child {
+            text-align: center;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .status-hadir { background: #d1fae5; color: #065f46; }
+        .status-sakit { background: #dbeafe; color: #1e40af; }
+        .status-izin { background: #fed7aa; color: #9a3412; }
+        .status-alpa { background: #fee2e2; color: #991b1b; }
+
+        /* Grade Badges */
+        .grade-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            padding: 4px 0;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .grade-A { background: #d1fae5; color: #065f46; }
+        .grade-B { background: #dbeafe; color: #1e40af; }
+        .grade-C { background: #fed7aa; color: #9a3412; }
+        .grade-D { background: #ffe4e6; color: #9f1239; }
+        .grade-E { background: #fee2e2; color: #991b1b; }
+
+        /* ========================================
+           STATS CARDS
+        ======================================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h4 {
+            font-size: 0.7rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-info .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        /* ========================================
+           GRADE INPUT
+        ======================================== */
+        .grade-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .grade-input {
+            width: 80px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .grade-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .grade-input.invalid {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+
+        /* ========================================
+           PAGINATION
+        ======================================== */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pagination-info {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .pagination-ellipsis {
+            padding: 8px 12px;
+            color: var(--gray);
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            color: rgb(243, 146, 146);
+            border-color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========================================
+           MODAL MODERN
+        ======================================== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            animation: modalSlideIn 0.2s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-large {
+            max-width: 900px;
+        }
+
+        .modal-header {
+            padding: 18px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: calc(90vh - 70px);
+            overflow-y: auto;
+        }
+
+        /* Modal Tabs */
+        .modal-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .modal-tab {
+            padding: 8px 20px;
+            background: none;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray);
+            transition: all 0.2s;
+        }
+
+        .modal-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-tab-content {
+            display: none;
+        }
+
+        .modal-tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        /* ========================================
+           NOTIFICATION
+        ======================================== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            left: auto;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            background: var(--dark);
+            color: white;
+            font-weight: 500;
+            z-index: 1100;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            max-width: 350px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--info); }
+        .toast-warning { background: var(--warning); }
+
+        /* ========================================
+           RESPONSIVE
+        ======================================== */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .action-bar {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 10px 12px;
+                font-size: 0.75rem;
+            }
+            
+            .modal-content {
+                max-width: 95%;
+            }
+            
+            .toast {
+                left: 16px;
+                right: 16px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .class-info {
+                flex-direction: column;
+            }
+        }
+
+        /* ========================================
+           UTILITIES
+        ======================================== */
+        .text-center { text-align: center; }
+        .text-muted { color: var(--gray); }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 16px; }
+        .d-flex { display: flex; }
+        .align-center { align-items: center; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 16px; }
+        .flex-wrap { flex-wrap: wrap; }
+        .w-100 { width: 100%; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        /* Additional Utility Classes */
+        .justify-content-between {
+            justify-content: space-between;
+        }
+
+        .justify-content-end {
+            justify-content: flex-end;
+        }
+
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+
+        /* Fix for modal close button */
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        footer {
+            background: linear-gradient(135deg, #1e293b, #3c185556); /* gradasi biru elegan */
+            color: #f1f1f1;
+            text-align: center;
+            padding: 20px 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        footer p:hover {
+            color: #000000; /* efek hover emas */
+            cursor: default;
+        }
+
+        /* Tambahan dekorasi garis tipis */
+        footer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+        }
+        @media (max-width: 600px) {
+            footer {
+                padding: 15px 5px;
+            }
+            footer p {
+                font-size: 12px;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="app-header">
+            <h1>
+                <i class="fas fa-graduation-cap"></i>
+                Sistem Kehadiran & Penilaian
+            </h1>
+            <p>Kelola kehadiran dan nilai siswa dengan mudah dan profesional</p>
+        </div>
+
+        <!-- Class Selection Card -->
+        <div class="card class-card">
+            <div class="card-header">
+                <h2><i class="fas fa-chalkboard-user"></i> Pilih Kelas</h2>
+                <button class="btn btn-outline" id="manageClassesBtn" style="background: rgba(255,255,255,0.15); color: white;">
+                    <i class="fas fa-database"></i> Manajemen Data
+                </button>
+            </div>
+            <div class="card-body">
+                <select id="classSelector" class="class-select">
+                    <option value="">-- Pilih Kelas --</option>
+                </select>
+                
+                <div id="selectedClassInfo" class="class-info" style="display: none;">
+                    <div class="class-info-item">
+                        <div class="label">Nama Kelas</div>
+                        <div class="value" id="infoClassName">-</div>
+                    </div>
+                    <div class="class-info-item">
+                        <div class="label">Jumlah Siswa</div>
+                        <div class="value" id="infoStudentCount">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="mainContent" style="display: none;">
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <button class="btn btn-primary" id="viewStatsBtn">
+                    <i class="fas fa-chart-simple"></i> Statistik
+                </button>
+                <button class="btn btn-success" id="backupBtn">
+                    <i class="fas fa-download"></i> Backup
+                </button>
+                <label class="btn btn-warning" for="restoreFile" style="cursor: pointer;">
+                    <i class="fas fa-upload"></i> Restore
+                </label>
+                <input type="file" id="restoreFile" style="display: none;" accept=".json">
+                <button class="btn btn-danger" id="resetBtn">
+                    <i class="fas fa-rotate-right"></i> Reset
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="input">
+                    <i class="fas fa-check-circle"></i> Kehadiran
+                </button>
+                <button class="tab" data-tab="recap">
+                    <i class="fas fa-chart-line"></i> Rekap
+                </button>
+                <button class="tab" data-tab="grades">
+                    <i class="fas fa-star"></i> Penilaian
+                </button>
+            </div>
+
+            <!-- Tab: Kehadiran -->
+            <div id="inputTab" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Input Kehadiran</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label><i class="fas fa-calendar"></i> Tanggal</label>
+                                <input type="date" id="attendanceDate" class="form-control">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>&nbsp;</label>
+                                <button class="btn btn-secondary w-100" id="setAllPresentBtn">
+                                    <i class="fas fa-check-double"></i> Semua Hadir
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label><i class="fas fa-search"></i> Cari Siswa</label>
+                                <input type="text" id="searchStudent" class="form-control" placeholder="Nama siswa...">
+                            </div>
+                        </div>
+                        
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>No</th><th>Nama Siswa</th><th>Status Kehadiran</th></tr>
+                                </thead>
+                                <tbody id="attendanceTableBody">
+                                    <tr><td colspan="3" class="text-center text-muted" style="padding: 60px;">
+                                        <i class="fas fa-chalkboard-user" style="font-size: 2rem;"></i>
+                                        <p>Pilih kelas terlebih dahulu</p>
+                                    </td></tr>
+                                </tbody>
+                             </table>
+                        </div>
+                        
+                        <div class="pagination" id="paginationControls" style="display: none;">
+                            <div class="pagination-info" id="pageInfo"></div>
+                            <div class="pagination-controls">
+                                <button class="page-btn" id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i></button>
+                                <div id="pageNumbers" class="d-flex gap-2"></div>
+                                <button class="page-btn" id="nextPageBtn" disabled><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Rekap -->
+            <div id="recapTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-simple"></i> Rekap Kehadiran</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tanggal Mulai</label>
+                                <input type="date" id="recapStartDate" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Tanggal Selesai</label>
+                                <input type="date" id="recapEndDate" class="form-control">
+                            </div>
+                            <div class="form-group" style="flex: 0.5;">
+                                <label>&nbsp;</label>
+                                <button class="btn btn-primary w-100" id="loadRecapBtn">
+                                    <i class="fas fa-refresh"></i> Tampilkan
+                                </button>
+                            </div>
+                        </div>
+                        <div id="recapContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Penilaian -->
+            <div id="gradesTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-star"></i> Input Nilai Siswa</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Form Nilai -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-book"></i> Mata Pelajaran</label>
+                                <select id="nilaiMapel" class="form-control">
+                                    <option value="">-- Pilih Mata Pelajaran --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-tag"></i> Tipe Penilaian</label>
+                                <select id="nilaiTipe" class="form-control">
+                                    <option value="">-- Pilih Tipe --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar"></i> Tanggal</label>
+                                <input type="date" id="nilaiTanggal" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-layer-group"></i> Lingkup Materi</label>
+                                <select id="nilaiLingkup" class="form-control">
+                                    <option value="">-- Pilih Lingkup --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="mapelManualGroup" style="display: none;">
+                                <label><i class="fas fa-pen"></i> Mapel Lainnya</label>
+                                <input type="text" id="mapelManual" class="form-control" placeholder="Nama mapel">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid mt-3">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Siswa</h4>
+                            <div class="value" id="totalSiswaNilai">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-info">
+                            <h4>Rata-rata</h4>
+                            <div class="value" id="rataNilai">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-info">
+                            <h4>Tertinggi</h4>
+                            <div class="value" id="nilaiTertinggi">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-flag-checkered"></i></div>
+                        <div class="stat-info">
+                            <h4>Terendah</h4>
+                            <div class="value" id="nilaiTerendah">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grade Actions -->
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="btnSimpanNilai" disabled>
+                        <i class="fas fa-save"></i> Simpan Semua
+                    </button>
+                    <button class="btn btn-secondary" id="btnGenerateNilai">
+                        <i class="fas fa-dice"></i> Generate Random
+                    </button>
+                    <button class="btn btn-warning" id="btnClearAll">
+                        <i class="fas fa-eraser"></i> Hapus Form
+                    </button>
+                    <button class="btn btn-danger" id="resetGradesBtn">
+                        <i class="fas fa-trash"></i> Reset Database
+                    </button>
+                    <button class="btn btn-success" id="exportGradesBtn">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="previewGradesRecapBtn">
+                            <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="loadGradesRecapBtn">
+                            <i class="fas fa-refresh"></i> Refresh
+                    </button>
+                </div>
+
+
+                <!-- Tabel Nilai -->
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>No</th><th>Nama Siswa</th><th>Nilai</th><th>Lingkup</th><th>Tipe</th><th>Catatan</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody id="gradesTableBody">
+                            <tr><td colspan="7" class="text-center text-muted" style="padding: 60px;">
+                                <i class="fas fa-edit" style="font-size: 2rem;"></i>
+                                <p>Pilih kelas terlebih dahulu</p>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Tambahkan setelah tabel grades, sebelum modal preview recap -->
+                <div id="gradesRecapContainer" class="mt-3" style="margin-top: 20px;"></div>
+                <div id="performanceContainer" style="display: none;"></div>
+
+                <!-- Tambahkan juga modal untuk performance dashboard (opsional) -->
+                <div id="performanceModal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-chart-line"></i> Dashboard Performa Kelas</h2>
+                            <button class="modal-close" onclick="document.getElementById('performanceModal').style.display='none'">&times;</button>
+                        </div>
+                        <div class="modal-body" id="performanceModalContent"></div>
+                    </div>
+                </div>
+                <!-- Pagination Controls untuk Nilai -->
+                <div id="gradesPaginationControls" class="pagination" style="display: none;">
+                    <div class="pagination-info" id="gradesPaginationInfo"></div>
+                    <div class="pagination-controls" id="gradesPaginationNumbers"></div>
+                </div>
+               
+            </div>
+                          
+        </div>
+    </div>
+
+    <!-- Modal Manajemen -->
+    <div id="manageModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-database"></i> Manajemen Data</h2>
+                <button class="modal-close" id="closeManageModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-tabs">
+                    <button class="modal-tab active" data-modal-tab="classes">📚 Kelas</button>
+                    <button class="modal-tab" data-modal-tab="students">👨‍🎓 Siswa</button>
+                    <button class="modal-tab" data-modal-tab="import">📤 Import</button>
+                </div>
+
+                <div id="modalClassesTab" class="modal-tab-content active">
+                    <div class="d-flex justify-content-between align-center mb-3 flex-wrap gap-2">
+                        <h4>Daftar Kelas</h4>
+                        <button class="btn btn-primary btn-sm" id="addClassBtn">
+                            <i class="fas fa-plus"></i> Tambah Kelas
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr><th>ID</th><th>Nama Kelas</th><th>Siswa</th><th>Aksi</th></tr></thead>
+                            <tbody id="classesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="modalStudentsTab" class="modal-tab-content">
+                    <div class="d-flex justify-content-between align-center mb-3 flex-wrap gap-2">
+                        <select id="studentClassFilter" class="form-control" style="width: auto;">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" id="addStudentBtn">
+                            <i class="fas fa-plus"></i> Tambah Siswa
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Aksi</th></tr></thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="modalImportTab" class="modal-tab-content">
+                    <h4>Import Data dari Excel/CSV</h4>
+                    <p class="text-muted mb-3">Format: Kolom A = Nama Kelas, Kolom B = Nama Siswa</p>
+                    <div class="form-group">
+                        <input type="file" id="importClassesFile" accept=".csv,.xlsx,.xls" class="form-control">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" id="importClassesBtn">
+                            <i class="fas fa-upload"></i> Import Data
+                        </button>
+                        <button class="btn btn-secondary" id="downloadTemplateBtn">
+                            <i class="fas fa-download"></i> Download Template
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kelas -->
+    <div id="classFormModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="classFormTitle">Tambah Kelas</h2>
+                <button class="modal-close" id="closeClassFormModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="classForm">
+                    <div class="form-group">
+                        <label>ID Kelas</label>
+                        <input type="text" id="classId" class="form-control" placeholder="contoh: vii-1" required>
+                        <small>Huruf kecil, angka, dan tanda hubung</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Kelas</label>
+                        <input type="text" id="className" class="form-control" placeholder="Contoh: VII-1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Daftar Siswa (satu baris satu nama)</label>
+                        <textarea id="classStudents" class="form-control" rows="5" placeholder="Ahmad Fauzi&#10;Budi Santoso&#10;Citra Dewi"></textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline" id="cancelClassBtn">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Siswa -->
+    <div id="studentFormModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="studentFormTitle">Tambah Siswa</h2>
+                <button class="modal-close" id="closeStudentFormModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="studentForm">
+                    <div class="form-group">
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="studentName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kelas</label>
+                        <select id="studentClass" class="form-control" required></select>
+                    </div>
+                    <input type="hidden" id="studentId">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline" id="cancelStudentBtn">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Statistik -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-simple"></i> Statistik Kehadiran</h2>
+                <button class="modal-close" id="closeStatsBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-grid" id="statsContainer"></div>
+                <div id="detailedStats" class="text-center text-muted"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reset Nilai -->
+    <div id="resetGradesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Konfirmasi Reset</h2>
+                <button class="modal-close" id="closeResetModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Apakah Anda yakin ingin mereset SEMUA nilai di kelas ini?</p>
+                <p class="text-muted">Tindakan ini tidak dapat dibatalkan!</p>
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button class="btn btn-outline" id="cancelResetBtn">Batal</button>
+                    <button class="btn btn-danger" id="confirmResetBtn">Ya, Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Nilai -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Nilai</h2>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editGradeForm">
+                    <div class="form-group">
+                        <label>Nama Siswa</label>
+                        <input type="text" id="editStudentName" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Nilai (0-100)</label>
+                        <input type="number" id="editNilai" class="form-control" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Catatan</label>
+                        <textarea id="editCatatan" class="form-control" rows="3" placeholder="Catatan..."></textarea>
+                    </div>
+                    <input type="hidden" id="editStudentId">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline" id="cancelEdit">Batal</button>
+                        <button type="button" class="btn btn-primary" id="saveEdit">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Preview Rekap Nilai -->
+    <div id="previewRecapModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-line"></i> Preview Rekap Nilai Kelas</h2>
+                <button class="modal-close" id="closePreviewRecapModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-center mb-3 flex-wrap gap-2">
+                    <div class="class-info-preview">
+                        <strong>Kelas:</strong> <span id="previewClassName">-</span>
+                    </div>
+                    <button class="btn btn-success btn-sm" id="exportRecapToExcelBtn">
+                        <i class="fas fa-file-excel"></i> Export ke Excel
+                    </button>
+                </div>
+                <div id="previewRecapContainer" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Content will be populated here -->
+                </div>
+            </div>
+        </div>
+    
+    </div>
+    
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    <footer>
+            <p>&copy; 2026 Aplikasi ABS & PN Guru PJOK @SMPN 2 Kwandang</p>
+    </footer>
+
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sqlite-engine.js"></script>
+    <script src="js/ui.js"></script>         
+    <script src="js/grades.js"></script>
+     <script src="js/tab-handler.js"></script>        
+    <script src="js/export.js"></script>
+     <script src="js/app.js"></script>      
+</body>
+</html>
